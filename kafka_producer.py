@@ -1,35 +1,32 @@
+from kafka import KafkaProducer
 import json
-import random
 import time
-from datetime import datetime, timezone
 
-def generate_sensor_event():
+from sensor_simulator import generate_sensor_event
 
-    event = {
-        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
-        "container_id": random.choice(["CONT001", "CONT002", "CONT003"]),
-        "temperature": round(random.uniform(2, 15), 2),
-        "humidity": round(random.uniform(40, 90), 2),
-        "vibration": round(random.uniform(0.1, 1.0), 2),
-        "commodity": random.choice(["Apples", "Bananas", "Mangoes"]),
-        "quantity_kg": round(random.uniform(100, 1000), 2)
-    }
+# Connect to Kafka server
+producer = KafkaProducer(
+    bootstrap_servers=['localhost:9092'],
+    value_serializer=lambda x: json.dumps(x).encode('utf-8')
+)
 
-    return event
+# Kafka topic name
+topic = 'atmosync-sensor-data'
 
+print("AtmoSync Kafka Producer Started!")
 
-if __name__ == "__main__":
+# Generate and publish sensor events
+for i in range(10):
 
-    print("Starting AtmoSync Sensor Simulator...\n")
+    sensor_data = generate_sensor_event()
 
-    for i in range(10):
+    producer.send(topic, value=sensor_data)
 
-        sensor_data = generate_sensor_event()
+    print("Message sent:", sensor_data)
 
-        json_event = json.dumps(sensor_data)
+    time.sleep(2)
 
-        print(json_event)
+producer.flush()
+producer.close()
 
-        time.sleep(2)
-
-    print("\nSimulation completed!")
+print("All sensor events sent successfully!")

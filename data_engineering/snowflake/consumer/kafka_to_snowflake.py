@@ -45,17 +45,20 @@ try:
 
         cursor.execute(
             """
-            INSERT INTO CONTAINER_EVENTS_RAW
-            (EVENT_ID, RAW_PAYLOAD)
-            SELECT %s, PARSE_JSON(%s)
+            MERGE INTO CONTAINER_EVENTS_RAW AS target
+            USING (
+                SELECT %s AS EVENT_ID, PARSE_JSON(%s) AS RAW_PAYLOAD
+            ) AS source
+            ON target.EVENT_ID = source.EVENT_ID
+            WHEN NOT MATCHED THEN
+                INSERT (EVENT_ID, RAW_PAYLOAD)
+                VALUES (source.EVENT_ID, source.RAW_PAYLOAD)
             """,
             (
                 data["container_id"] + "_" + data["timestamp"],
                 json.dumps(data)
             )
         )
-
-        print("Inserted into Snowflake:", data)
 
 except KeyboardInterrupt:
     print("Consumer stopped.")

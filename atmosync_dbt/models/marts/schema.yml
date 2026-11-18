@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: mart_container_summary
+    description: "Container-level analytical summary of sensor events"
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - CONTAINER_ID
+              - COMMODITY
+
+    columns:
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: COMMODITY
+        data_tests:
+          - not_null
+
+      - name: TOTAL_SENSOR_EVENTS
+        data_tests:
+          - not_null
+
+      - name: LATEST_REPORTED_QUANTITY_KG
+        data_tests:
+          - not_null
+
+      - name: AVG_TEMPERATURE
+        data_tests:
+          - not_null
+
+      - name: AVG_HUMIDITY
+        data_tests:
+          - not_null
+
+      - name: AVG_VIBRATION
+        data_tests:
+          - not_null

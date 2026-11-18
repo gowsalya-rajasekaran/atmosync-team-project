@@ -1,5 +1,4 @@
 # AtmoSync – dbt Data Transformation Pipeline
-
 ## Project Overview
 
 AtmoSync is an IoT-based container sensor data pipeline designed to process and analyze real-time container telemetry.

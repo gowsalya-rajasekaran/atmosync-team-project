@@ -1,0 +1,32 @@
+[
+  {
+    "event_id": "f9797667-4159-4cd6-bd0f-cd10b1774c37",
+    "timestamp": "2026-11-18T10:21:32.523402+00:00",
+    "container_id": "CONT001",
+    "temperature": 5.84,
+    "humidity": 90.74,
+    "vibration": 0.69,
+    "commodity": "Apples",
+    "quantity_kg": 500
+  },
+  {
+    "event_id": "cadfe42e-5cd7-48d3-89f9-c1ee084ee91d",
+    "timestamp": "2026-11-18T10:21:36.524923+00:00",
+    "container_id": "CONT003",
+    "temperature": 12.98,
+    "humidity": 88.08,
+    "vibration": 0.33,
+    "commodity": "Mangoes",
+    "quantity_kg": 400
+  },
+  {
+    "event_id": "18981eff-094c-4fbf-9ecf-9c0a3a8a2680",
+    "timestamp": "2026-11-18T10:21:38.526269+00:00",
+    "container_id": "CONT002",
+    "temperature": 14.84,
+    "humidity": 91.19,
+    "vibration": 0.98,
+    "commodity": "Bananas",
+    "quantity_kg": 700
+  }
+]

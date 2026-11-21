@@ -19,6 +19,7 @@ if not all([SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_ACCOUNT]):
 consumer = KafkaConsumer(
     "atmosync-sensor-data",
     bootstrap_servers="localhost:9092",
+    group_id="atmosync-snowflake-consumer",
     auto_offset_reset="earliest",
     enable_auto_commit=True,
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
@@ -55,7 +56,7 @@ try:
                 VALUES (source.EVENT_ID, source.RAW_PAYLOAD)
             """,
             (
-                data["container_id"] + "_" + data["timestamp"],
+                data["event_id"],
                 json.dumps(data)
             )
         )

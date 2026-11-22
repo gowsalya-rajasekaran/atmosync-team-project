@@ -6,7 +6,7 @@ import snowflake.connector
 from dotenv import load_dotenv
 
 # Load private credentials from .env
-load_dotenv()
+load_dotenv(os.path.expanduser("~/atmosync/.env"))
 
 SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER")
 SNOWFLAKE_PASSWORD = os.getenv("SNOWFLAKE_PASSWORD")
@@ -20,8 +20,8 @@ consumer = KafkaConsumer(
     "atmosync-sensor-data",
     bootstrap_servers="localhost:9092",
     group_id="atmosync-snowflake-consumer",
-    auto_offset_reset="earliest",
-    enable_auto_commit=True,
+    auto_offset_reset="latest",
+    enable_auto_commit=False,
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
@@ -60,6 +60,9 @@ try:
                 json.dumps(data)
             )
         )
+
+        consumer.commit()
+        print(f"Successfully stored and committed: {data['event_id']}")
 
 except KeyboardInterrupt:
     print("Consumer stopped.")

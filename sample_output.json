@@ -3,7 +3,7 @@
   "timestamp": "2026-11-22T12:30:00Z",
   "container_id": "CONT001",
   "temperature": 8.5,
-  "humidity": 65.4,
+  "humidity": 82.4,
   "vibration": 0.35,
   "commodity": "Avocados",
   "quantity_kg": 500

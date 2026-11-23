@@ -27,3 +27,9 @@ models:
     marts:
       +materialized: table
       +schema: analytics
+
+
+seeds:
+  atmosync_dbt:
+    commodity_prices_avocado_test:
+      +schema: avocado_test

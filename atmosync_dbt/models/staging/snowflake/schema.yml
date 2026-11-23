@@ -52,3 +52,45 @@ models:
 
       - name: INGESTED_AT
         description: "Timestamp when the sensor event was ingested into Snowflake"
+  - name: stg_avocado_sensors
+    description: >
+      Cleaned and standardized avocado container sensor data
+      extracted from the isolated Snowflake avocado test view.
+
+    columns:
+      - name: EVENT_ID
+        description: "Unique identifier for each avocado sensor event"
+        data_tests:
+          - not_null
+          - unique
+
+      - name: EVENT_TIMESTAMP
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: COMMODITY
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Avocados']
+
+      - name: QUANTITY_KG
+        data_tests:
+          - not_null
+
+      - name: TEMPERATURE
+        data_tests:
+          - not_null
+
+      - name: HUMIDITY
+        data_tests:
+          - not_null
+
+      - name: VIBRATION
+        data_tests:
+          - not_null

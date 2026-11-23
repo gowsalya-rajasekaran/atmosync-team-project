@@ -7,4 +7,9 @@ sources:
     tables:
       - name: container_sensor_view
         description: "Structured container sensor events from Snowflake"
-
+  - name: atmosync_avocado_test
+    database: ATMOSYNC_DB
+    schema: RAW_DATA
+    tables:
+      - name: container_sensor_avocado_test_view
+        description: "Structured avocado-only sensor events for isolated pipeline testing"

@@ -1,0 +1,1161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atmosync Cold-Chain Operations | Apache Superset</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js & Annotation Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <!-- Google Fonts: Inter & JetBrains Mono -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        superset: {
+                            teal: '#20A7C9',
+                            tealDark: '#1687A3',
+                            tealLight: '#E6F6FA',
+                            canvas: '#F5F7FA',
+                            slate: '#263238',
+                            border: '#E0E4E8',
+                            accentOrange: '#FCC700',
+                            accentPurple: '#8B5CF6',
+                            accentRed: '#E04355',
+                            accentGreen: '#5AC18E'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #F5F7FA;
+            color: #263238;
+        }
+        /* Superset-style subtle card shadows and crisp borders */
+        .superset-card {
+            background: #FFFFFF;
+            border: 1px solid #E0E4E8;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            transition: box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+        .superset-card:hover {
+            box-shadow: 0 4px 12px rgba(32, 167, 201, 0.08);
+            border-color: #CBD5E1;
+        }
+        /* Custom scrollbar for table */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94A3B8;
+        }
+    </style>
+</head>
+<body class="antialiased min-h-screen flex flex-col">
+
+    <!-- Top Superset Navigation Header -->
+    <header class="bg-white border-b border-superset-border sticky top-0 z-30 shadow-xs">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-3 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <!-- Brand & Title -->
+            <div class="flex items-center gap-3">
+                <!-- Superset-inspired Geometric Icon -->
+                <div class="w-9 h-9 rounded-md bg-superset-teal flex items-center justify-center text-white shrink-0 shadow-xs">
+                    <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+                    </svg>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <h1 class="text-base sm:text-lg font-bold tracking-tight text-slate-900">
+                            Atmosync Cold-Chain Operations <span class="text-slate-400 font-normal">|</span> <span class="text-superset-teal font-semibold">Apache Superset</span>
+                        </h1>
+                        <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Published
+                        </span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs text-slate-500 mt-0.5">
+                        <span class="inline-flex items-center gap-1.5 font-mono text-[11px] bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                            Connected: Snowflake ATMOSYNC_DB.PUBLIC
+                        </span>
+                        <span class="hidden sm:inline text-slate-400">•</span>
+                        <span class="hidden sm:inline">Dataset: <code class="font-mono text-slate-700">SENSOR_TELEMETRY</code></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dataset Mode Toggle & SQL Modal Trigger -->
+            <div class="flex flex-wrap items-center gap-2.5">
+                <!-- Deduplicated vs Raw Toggle Switch -->
+                <div class="inline-flex rounded-md bg-slate-100 p-1 border border-slate-200" role="group" aria-label="Dataset Mode Toggle">
+                    <button type="button" id="btn-mode-dedup" onclick="setDatasetMode('dedup')"
+                        class="px-3 py-1.5 text-xs font-semibold rounded transition-all flex items-center gap-1.5 bg-white text-superset-teal shadow-xs border border-slate-200/80">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Deduplicated View (15 Events)
+                    </button>
+                    <button type="button" id="btn-mode-raw" onclick="setDatasetMode('raw')"
+                        class="px-3 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900">
+                        <svg class="w-3.5 h-3.5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        Raw Table View (25 Events: +66.6% Duplication)
+                    </button>
+                </div>
+
+                <!-- View SQL Lab Query Button -->
+                <button onclick="toggleSqlModal(true)" class="px-3 py-1.5 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-slate-300 rounded-md flex items-center gap-1.5 transition-colors">
+                    <svg class="w-3.5 h-3.5 text-superset-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"/></svg>
+                    SQL Lab View
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Superset Native Filter Bar -->
+    <div class="bg-white border-b border-superset-border">
+        <div class="max-w-[1600px] mx-auto px-4 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+            <div class="flex flex-wrap items-center gap-3">
+                <div class="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                    <svg class="w-4 h-4 text-superset-teal" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/></svg>
+                    Dashboard Filters:
+                </div>
+
+                <!-- Container Filter -->
+                <div class="flex items-center gap-2">
+                    <label for="filter-container" class="text-xs font-medium text-slate-600">Container ID:</label>
+                    <select id="filter-container" onchange="applyFilters()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-800 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-superset-teal focus:border-superset-teal">
+                        <option value="ALL">All Containers (3)</option>
+                        <option value="CONT001">CONT001</option>
+                        <option value="CONT002">CONT002</option>
+                        <option value="CONT003">CONT003</option>
+                    </select>
+                </div>
+
+                <!-- Commodity Filter -->
+                <div class="flex items-center gap-2">
+                    <label for="filter-commodity" class="text-xs font-medium text-slate-600">Commodity:</label>
+                    <select id="filter-commodity" onchange="applyFilters()" class="text-xs font-medium bg-slate-50 border border-slate-300 text-slate-800 rounded px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-superset-teal focus:border-superset-teal">
+                        <option value="ALL">All Commodities (3)</option>
+                        <option value="Apples">Apples</option>
+                        <option value="Bananas">Bananas</option>
+                        <option value="Mangoes">Mangoes</option>
+                    </select>
+                </div>
+
+                <button onclick="resetFilters()" class="text-xs text-superset-teal hover:text-superset-tealDark font-medium underline underline-offset-2 ml-1">
+                    Reset Filters
+                </button>
+            </div>
+
+            <!-- Dynamic Anomaly Banner -->
+            <div id="anomaly-banner" class="text-xs px-3 py-1 rounded-full bg-superset-tealLight text-superset-tealDark font-medium border border-cyan-200 flex items-center gap-1.5">
+                <span class="w-2 h-2 rounded-full bg-superset-teal"></span>
+                <span>Showing clean deduplicated records (10 duplicate batch-replay rows excluded)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard Canvas -->
+    <main class="max-w-[1600px] w-full mx-auto px-4 sm:px-6 py-5 space-y-5 flex-1">
+
+        <!-- Row 1: KPI Big Number Cards (6-Card Grid) -->
+        <section aria-label="Key Performance Indicators" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+            <!-- KPI 1: Total Events -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total Events</span>
+                    <span id="kpi-events-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-50 text-superset-tealDark font-semibold">DEDUP</span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-events" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">15</div>
+                </div>
+                <div id="kpi-events-sub" class="text-[11px] text-slate-500">Unique EVENT_ID count</div>
+            </div>
+
+            <!-- KPI 2: Active Containers -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Active Containers</span>
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-containers" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">3</div>
+                </div>
+                <div class="text-[11px] text-slate-500 font-mono">CONT001 – CONT003</div>
+            </div>
+
+            <!-- KPI 3: Total Cargo Volume -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Total Cargo Volume</span>
+                    <span id="kpi-cargo-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold">VERIFIED</span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-cargo" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">8,169.81 <span class="text-sm font-medium text-slate-500">kg</span></div>
+                </div>
+                <div id="kpi-cargo-sub" class="text-[11px] text-slate-500">Avg: 544.65 kg / event</div>
+            </div>
+
+            <!-- KPI 4: Mean Temperature -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mean Temperature</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 font-semibold">REF ≤8°C</span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-temp" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">8.34<span class="text-lg font-semibold text-slate-500">°C</span></div>
+                </div>
+                <div id="kpi-temp-sub" class="text-[11px] text-slate-500">Range: 2.35°C – 14.48°C</div>
+            </div>
+
+            <!-- KPI 5: Mean Humidity -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Mean Humidity</span>
+                    <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 font-semibold">RH %</span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-humidity" class="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">67.34<span class="text-lg font-semibold text-slate-500">%</span></div>
+                </div>
+                <div id="kpi-humidity-sub" class="text-[11px] text-slate-500">Range: 50.27% – 89.79%</div>
+            </div>
+
+            <!-- KPI 6: Max Vibration Spike -->
+            <div class="superset-card p-4 flex flex-col justify-between">
+                <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Max Vibration Spike</span>
+                    <span id="kpi-vib-badge" class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-rose-50 text-rose-700 font-semibold">ALERT &gt;0.75g</span>
+                </div>
+                <div class="my-2">
+                    <div id="kpi-vibration" class="text-2xl sm:text-3xl font-bold text-rose-600 tracking-tight">0.90<span class="text-lg font-semibold text-slate-500">g</span></div>
+                </div>
+                <div id="kpi-vibration-sub" class="text-[11px] text-slate-500">Mean: 0.55g across events</div>
+            </div>
+        </section>
+
+        <!-- Row 2: Environmental Telemetry Charts (Temperature & Humidity) -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Chart 1: Container Temperature Trends -->
+            <div class="superset-card p-5 flex flex-col">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold text-slate-900">1. Container Temperature Trends (°C)</h2>
+                            <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">ECharts Line</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Sequential telemetry per container with <span class="text-rose-600 font-semibold">8.0°C Upper Threshold</span> alert line</p>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400">AVG(TEMPERATURE)</span>
+                </div>
+                <div class="relative w-full h-[290px]">
+                    <canvas id="chartTemperature"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 2: Humidity Fluctuations -->
+            <div class="superset-card p-5 flex flex-col">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold text-slate-900">2. Humidity Fluctuations (%)</h2>
+                            <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">Area Trend</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Relative humidity distribution across transit checkpoints grouped by <code class="font-mono text-slate-700">CONTAINER_ID</code></p>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400">AVG(HUMIDITY)</span>
+                </div>
+                <div class="relative w-full h-[290px]">
+                    <canvas id="chartHumidity"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Row 3: Mechanical Shock & Commodity Cargo Charts -->
+        <section class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+            <!-- Chart 3: Vibration Levels by Container Event -->
+            <div class="superset-card p-5 flex flex-col">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold text-slate-900">3. Vibration Levels by Container Event (g)</h2>
+                            <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">Bar + Threshold</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Color-coded by container with <span class="text-rose-600 font-semibold">0.75g High Shock Threshold</span> reference</p>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400">MAX(VIBRATION)</span>
+                </div>
+                <div class="relative w-full h-[290px]">
+                    <canvas id="chartVibration"></canvas>
+                </div>
+            </div>
+
+            <!-- Chart 4: Commodity-Wise Total Quantity -->
+            <div class="superset-card p-5 flex flex-col">
+                <div class="flex items-start justify-between gap-2 mb-3">
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h2 class="text-sm font-bold text-slate-900">4. Commodity-Wise Total Quantity (kg)</h2>
+                            <span class="text-[10px] font-mono bg-slate-100 text-slate-600 px-1.5 py-0.5 rounded border border-slate-200">Aggregated Bar</span>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-0.5">Hover bars for event count & average shipment weight per event</p>
+                    </div>
+                    <span class="text-[11px] font-mono text-slate-400">SUM(QUANTITY_KG)</span>
+                </div>
+                <div class="relative w-full h-[290px]">
+                    <canvas id="chartCommodity"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Row 4: Geo-Route Status Card & Snowflake Validation Audit Table -->
+        <section class="grid grid-cols-1 xl:grid-cols-12 gap-5">
+            <!-- Geo-Route Status & Schema Inspection (4 cols) -->
+            <div class="xl:col-span-4 superset-card p-5 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                            Historical Container Route Map
+                        </h2>
+                        <span class="text-[11px] font-mono font-semibold px-2 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                            UNAVAILABLE
+                        </span>
+                    </div>
+
+                    <div class="p-3 rounded bg-slate-50 border border-slate-200 text-xs text-slate-700 space-y-1.5">
+                        <p class="font-semibold text-slate-900">Status: Deck.gl Path Visualization Skipped</p>
+                        <p class="text-slate-600 leading-relaxed">
+                            <code class="font-mono text-[11px] bg-white px-1 py-0.5 rounded border border-slate-200">LATITUDE</code> / <code class="font-mono text-[11px] bg-white px-1 py-0.5 rounded border border-slate-200">LONGITUDE</code> columns are not present in the current Snowflake schema.
+                        </p>
+                    </div>
+
+                    <div class="mt-4">
+                        <h3 class="text-[11px] font-semibold uppercase tracking-wider text-slate-500 mb-2">Inspected Snowflake Table Schema (9 Columns)</h3>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-1.5 font-mono text-[11px]">
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800 font-semibold">EVENT_ID</span><span class="text-slate-500">VARCHAR (PK)</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">EVENT_TIMESTAMP</span><span class="text-slate-500">TIMESTAMP_NTZ</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">CONTAINER_ID</span><span class="text-slate-500">VARCHAR</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">TEMPERATURE</span><span class="text-slate-500">FLOAT (°C)</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">HUMIDITY</span><span class="text-slate-500">FLOAT (%)</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">VIBRATION</span><span class="text-slate-500">FLOAT (g)</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">COMMODITY</span><span class="text-slate-500">VARCHAR</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">QUANTITY_KG</span><span class="text-slate-500">FLOAT (kg)</span></div>
+                            <div class="flex justify-between px-2.5 py-1 bg-slate-50 rounded border border-slate-200/80"><span class="text-slate-800">INGESTED_AT</span><span class="text-slate-500">TIMESTAMP_NTZ</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                    <span class="font-semibold text-superset-tealDark">Remediation:</span> Append <code class="font-mono">LATITUDE FLOAT</code> and <code class="font-mono">LONGITUDE FLOAT</code> to enable Superset Deck.gl Arc/Path layers.
+                </div>
+            </div>
+
+            <!-- Validation Audit & Operational Anomalies Panel (8 cols) -->
+            <div class="xl:col-span-8 superset-card p-5 flex flex-col justify-between space-y-4">
+                <div>
+                    <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-slate-900">Snowflake Dashboard Validation Audit Results</h2>
+                            <p class="text-xs text-slate-500">Reconciling Superset metrics against Snowflake <code class="font-mono text-slate-700">SENSOR_TELEMETRY</code> raw vs. deduplicated queries</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                            100% SQL Benchmark Match
+                        </span>
+                    </div>
+
+                    <!-- Audit Comparison Table -->
+                    <div class="overflow-x-auto border border-slate-200 rounded-md">
+                        <table class="min-w-full divide-y divide-slate-200 text-xs">
+                            <thead class="bg-slate-50 text-slate-600 font-semibold">
+                                <tr>
+                                    <th class="px-3 py-2 text-left">Validation Metric</th>
+                                    <th class="px-3 py-2 text-right">Raw Table (25 Rows)</th>
+                                    <th class="px-3 py-2 text-right text-superset-tealDark">Deduplicated (15 Rows)</th>
+                                    <th class="px-3 py-2 text-right">Variance / Range</th>
+                                    <th class="px-3 py-2 text-center">Audit Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 bg-white">
+                                <tr>
+                                    <td class="px-3 py-2 font-medium text-slate-900">Event Record Count</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">25</td>
+                                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">15</td>
+                                    <td class="px-3 py-2 text-right font-mono text-amber-600">+10 batch duplicates</td>
+                                    <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px]">PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 font-medium text-slate-900">Total Cargo Volume (kg)</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">13,609.88 kg</td>
+                                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">8,169.81 kg</td>
+                                    <td class="px-3 py-2 text-right font-mono text-amber-600">+66.59% inflation</td>
+                                    <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px]">PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 font-medium text-slate-900">Mean Temperature (°C)</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">7.98°C</td>
+                                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">8.34°C</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">2.35°C – 14.48°C</td>
+                                    <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px]">PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 font-medium text-slate-900">Mean Relative Humidity (%)</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">65.78%</td>
+                                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">67.34%</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">50.27% – 89.79%</td>
+                                    <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px]">PASS</span></td>
+                                </tr>
+                                <tr>
+                                    <td class="px-3 py-2 font-medium text-slate-900">Mean / Max Vibration (g)</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">0.54g / 0.90g</td>
+                                    <td class="px-3 py-2 text-right font-mono font-bold text-slate-900">0.55g / 0.90g</td>
+                                    <td class="px-3 py-2 text-right font-mono text-slate-600">0.24g – 0.90g</td>
+                                    <td class="px-3 py-2 text-center"><span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold text-[11px]">PASS</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Highlighted Operational Anomalies -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1">
+                    <div class="p-3 rounded-md bg-rose-50/70 border border-rose-200">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-bold uppercase text-rose-700">Thermal Excursions (&gt;8°C)</span>
+                            <span class="text-[10px] font-mono bg-rose-100 text-rose-800 px-1.5 py-0.5 rounded">6 Events</span>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-snug">
+                            <strong>CONT002</strong> peaked at <span class="font-mono font-semibold text-rose-700">14.48°C</span> &amp; <span class="font-mono font-semibold text-rose-700">13.63°C</span> (Bananas); <strong>CONT003</strong> spiked to <span class="font-mono font-semibold text-rose-700">12.60°C</span> (Apples).
+                        </p>
+                    </div>
+
+                    <div class="p-3 rounded-md bg-amber-50/70 border border-amber-200">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-bold uppercase text-amber-800">High Shock Spikes (&gt;0.75g)</span>
+                            <span class="text-[10px] font-mono bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded">2 Critical</span>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-snug">
+                            <strong>CONT002</strong> logged <span class="font-mono font-semibold text-amber-800">0.90g</span> (Apples) and <strong>CONT003</strong> logged <span class="font-mono font-semibold text-amber-800">0.77g</span> (Apples) exceeding threshold.
+                        </p>
+                    </div>
+
+                    <div class="p-3 rounded-md bg-cyan-50/70 border border-cyan-200">
+                        <div class="flex items-center justify-between mb-1">
+                            <span class="text-[11px] font-bold uppercase text-superset-tealDark">Ingestion Replay Anomaly</span>
+                            <span class="text-[10px] font-mono bg-cyan-100 text-superset-tealDark px-1.5 py-0.5 rounded">2026-11-15</span>
+                        </div>
+                        <p class="text-xs text-slate-700 leading-snug">
+                            10 events from <span class="font-mono">12:24:01–12:24:19</span> were ingested twice (~21.5 mins apart at <span class="font-mono">05:08</span> &amp; <span class="font-mono">05:30</span> UTC).
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Row 5: Searchable & Filterable Snowflake Data Explorer -->
+        <section class="superset-card p-5">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-sm font-bold text-slate-900">Snowflake Data Explorer</h2>
+                        <span id="table-row-badge" class="text-xs font-mono font-semibold px-2 py-0.5 rounded bg-superset-tealLight text-superset-tealDark">
+                            15 rows
+                        </span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5">Live inspection of underlying <code class="font-mono text-slate-700">ATMOSYNC_DB.PUBLIC.SENSOR_TELEMETRY</code> records</p>
+                </div>
+
+                <!-- Search Input & Export CSV -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <div class="relative">
+                        <input type="text" id="table-search" onkeyup="applyFilters()" placeholder="Search EVENT_ID, commodity, container..."
+                            class="text-xs pl-8 pr-3 py-1.5 w-64 bg-slate-50 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-superset-teal focus:border-superset-teal">
+                        <svg class="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </div>
+                    <button onclick="exportFilteredCsv()" class="px-3 py-1.5 text-xs font-medium bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 rounded-md flex items-center gap-1.5 transition-colors">
+                        <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                        Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-x-auto border border-slate-200 rounded-md max-h-[380px]">
+                <table class="min-w-full divide-y divide-slate-200 text-xs">
+                    <thead class="bg-slate-50 text-slate-600 font-semibold sticky top-0 z-10 shadow-2xs">
+                        <tr>
+                            <th class="px-3 py-2.5 text-left">EVENT_ID</th>
+                            <th class="px-3 py-2.5 text-left">EVENT_TIMESTAMP</th>
+                            <th class="px-3 py-2.5 text-left">CONTAINER_ID</th>
+                            <th class="px-3 py-2.5 text-right">TEMP (°C)</th>
+                            <th class="px-3 py-2.5 text-right">HUMIDITY (%)</th>
+                            <th class="px-3 py-2.5 text-right">VIBRATION (g)</th>
+                            <th class="px-3 py-2.5 text-left">COMMODITY</th>
+                            <th class="px-3 py-2.5 text-right">QUANTITY_KG</th>
+                            <th class="px-3 py-2.5 text-left">INGESTED_AT</th>
+                            <th class="px-3 py-2.5 text-center">INGEST STATUS</th>
+                        </tr>
+                    </thead>
+                    <tbody id="telemetry-table-body" class="divide-y divide-slate-200 bg-white font-mono text-[11px]">
+                        <!-- Populated dynamically via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <!-- SQL Lab Virtual Dataset Modal -->
+    <div id="sql-modal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-50 hidden items-center justify-center p-4">
+        <div class="bg-white rounded-lg border border-slate-200 shadow-xl max-w-2xl w-full overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+                <div class="flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-superset-teal"></span>
+                    <h3 class="text-sm font-bold text-slate-900">Superset Virtual Dataset Definition (Snowflake SQL)</h3>
+                </div>
+                <button onclick="toggleSqlModal(false)" class="text-slate-400 hover:text-slate-700 p-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <div class="p-5 space-y-3">
+                <p class="text-xs text-slate-600">
+                    To eliminate the <strong>+66.6% cargo inflation</strong> caused by duplicate batch ingestion on <code class="font-mono text-slate-800">2026-11-15</code>, configure the Superset physical/virtual dataset using Snowflake's <code class="font-mono text-superset-tealDark font-semibold">QUALIFY ROW_NUMBER()</code> window function:
+                </p>
+                <pre id="sql-code-block" class="bg-slate-900 text-slate-100 p-4 rounded-md text-xs font-mono overflow-x-auto leading-relaxed">CREATE OR REPLACE VIEW ATMOSYNC_DB.PUBLIC.VW_SENSOR_TELEMETRY_CLEAN AS
+SELECT
+    EVENT_ID,
+    EVENT_TIMESTAMP,
+    CONTAINER_ID,
+    TEMPERATURE,
+    HUMIDITY,
+    VIBRATION,
+    COMMODITY,
+    QUANTITY_KG,
+    INGESTED_AT
+FROM ATMOSYNC_DB.PUBLIC.SENSOR_TELEMETRY
+QUALIFY ROW_NUMBER() OVER (
+    PARTITION BY EVENT_ID 
+    ORDER BY INGESTED_AT ASC
+) = 1;</pre>
+                <div class="flex items-center justify-between pt-2">
+                    <span id="copy-feedback" class="text-xs text-emerald-600 font-medium opacity-0 transition-opacity">Copied SQL to clipboard!</span>
+                    <div class="flex gap-2">
+                        <button onclick="copySqlCode()" class="px-3 py-1.5 text-xs font-semibold bg-superset-teal hover:bg-superset-tealDark text-white rounded transition-colors">
+                            Copy SQL Query
+                        </button>
+                        <button onclick="toggleSqlModal(false)" class="px-3 py-1.5 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded transition-colors">
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // =========================================================================
+        // 1. EXACT SNOWFLAKE TELEMETRY DATASET (25 RAW RECORDS)
+        // =========================================================================
+        const RAW_SNOWFLAKE_RECORDS = [
+            { EVENT_ID: "EVT001", EVENT_TIMESTAMP: "2026-11-11 10:30:00.000", CONTAINER_ID: "CONT001", TEMPERATURE: 8.5, HUMIDITY: 72.0, VIBRATION: 0.4, COMMODITY: "Apples", QUANTITY_KG: 500.0, INGESTED_AT: "2026-11-11 06:13:57.567" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:01.529183Z", EVENT_TIMESTAMP: "2026-11-15 12:24:01.529", CONTAINER_ID: "CONT003", TEMPERATURE: 11.31, HUMIDITY: 63.32, VIBRATION: 0.68, COMMODITY: "Mangoes", QUANTITY_KG: 668.49, INGESTED_AT: "2026-11-15 05:08:36.662" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:03.656291Z", EVENT_TIMESTAMP: "2026-11-15 12:24:03.656", CONTAINER_ID: "CONT003", TEMPERATURE: 8.02, HUMIDITY: 55.83, VIBRATION: 0.75, COMMODITY: "Apples", QUANTITY_KG: 193.11, INGESTED_AT: "2026-11-15 05:08:37.469" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:05.660055Z", EVENT_TIMESTAMP: "2026-11-15 12:24:05.660", CONTAINER_ID: "CONT002", TEMPERATURE: 14.48, HUMIDITY: 50.29, VIBRATION: 0.48, COMMODITY: "Bananas", QUANTITY_KG: 888.32, INGESTED_AT: "2026-11-15 05:08:37.796" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:07.661024Z", EVENT_TIMESTAMP: "2026-11-15 12:24:07.661", CONTAINER_ID: "CONT003", TEMPERATURE: 2.35, HUMIDITY: 50.27, VIBRATION: 0.54, COMMODITY: "Mangoes", QUANTITY_KG: 759.66, INGESTED_AT: "2026-11-15 05:08:38.087" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:09.661763Z", EVENT_TIMESTAMP: "2026-11-15 12:24:09.661", CONTAINER_ID: "CONT002", TEMPERATURE: 5.84, HUMIDITY: 52.78, VIBRATION: 0.24, COMMODITY: "Mangoes", QUANTITY_KG: 190.95, INGESTED_AT: "2026-11-15 05:08:38.408" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:11.662561Z", EVENT_TIMESTAMP: "2026-11-15 12:24:11.662", CONTAINER_ID: "CONT002", TEMPERATURE: 11.89, HUMIDITY: 58.58, VIBRATION: 0.9, COMMODITY: "Apples", QUANTITY_KG: 346.83, INGESTED_AT: "2026-11-15 05:08:38.745" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:13.664124Z", EVENT_TIMESTAMP: "2026-11-15 12:24:13.664", CONTAINER_ID: "CONT003", TEMPERATURE: 2.9, HUMIDITY: 74.34, VIBRATION: 0.25, COMMODITY: "Mangoes", QUANTITY_KG: 468.12, INGESTED_AT: "2026-11-15 05:08:39.409" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:15.666919Z", EVENT_TIMESTAMP: "2026-11-15 12:24:15.666", CONTAINER_ID: "CONT002", TEMPERATURE: 6.38, HUMIDITY: 81.98, VIBRATION: 0.34, COMMODITY: "Bananas", QUANTITY_KG: 938.83, INGESTED_AT: "2026-11-15 05:08:39.795" },
+            { EVENT_ID: "CONT001_2026-11-15T12:24:17.669566Z", EVENT_TIMESTAMP: "2026-11-15 12:24:17.669", CONTAINER_ID: "CONT001", TEMPERATURE: 6.1, HUMIDITY: 57.14, VIBRATION: 0.64, COMMODITY: "Apples", QUANTITY_KG: 392.12, INGESTED_AT: "2026-11-15 05:08:40.179" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:19.670529Z", EVENT_TIMESTAMP: "2026-11-15 12:24:19.670", CONTAINER_ID: "CONT003", TEMPERATURE: 5.17, HUMIDITY: 89.79, VIBRATION: 0.24, COMMODITY: "Bananas", QUANTITY_KG: 593.64, INGESTED_AT: "2026-11-15 05:08:40.705" },
+            // 10 Duplicate Batch-Replay Records (ingested ~21.5 mins later on 2026-11-15)
+            { EVENT_ID: "CONT003_2026-11-15T12:24:01.529183Z", EVENT_TIMESTAMP: "2026-11-15 12:24:01.529", CONTAINER_ID: "CONT003", TEMPERATURE: 11.31, HUMIDITY: 63.32, VIBRATION: 0.68, COMMODITY: "Mangoes", QUANTITY_KG: 668.49, INGESTED_AT: "2026-11-15 05:30:12.331" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:03.656291Z", EVENT_TIMESTAMP: "2026-11-15 12:24:03.656", CONTAINER_ID: "CONT003", TEMPERATURE: 8.02, HUMIDITY: 55.83, VIBRATION: 0.75, COMMODITY: "Apples", QUANTITY_KG: 193.11, INGESTED_AT: "2026-11-15 05:30:13.080" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:05.660055Z", EVENT_TIMESTAMP: "2026-11-15 12:24:05.660", CONTAINER_ID: "CONT002", TEMPERATURE: 14.48, HUMIDITY: 50.29, VIBRATION: 0.48, COMMODITY: "Bananas", QUANTITY_KG: 888.32, INGESTED_AT: "2026-11-15 05:30:13.490" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:07.661024Z", EVENT_TIMESTAMP: "2026-11-15 12:24:07.661", CONTAINER_ID: "CONT003", TEMPERATURE: 2.35, HUMIDITY: 50.27, VIBRATION: 0.54, COMMODITY: "Mangoes", QUANTITY_KG: 759.66, INGESTED_AT: "2026-11-15 05:30:14.216" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:09.661763Z", EVENT_TIMESTAMP: "2026-11-15 12:24:09.661", CONTAINER_ID: "CONT002", TEMPERATURE: 5.84, HUMIDITY: 52.78, VIBRATION: 0.24, COMMODITY: "Mangoes", QUANTITY_KG: 190.95, INGESTED_AT: "2026-11-15 05:30:14.820" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:11.662561Z", EVENT_TIMESTAMP: "2026-11-15 12:24:11.662", CONTAINER_ID: "CONT002", TEMPERATURE: 11.89, HUMIDITY: 58.58, VIBRATION: 0.9, COMMODITY: "Apples", QUANTITY_KG: 346.83, INGESTED_AT: "2026-11-15 05:30:15.136" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:13.664124Z", EVENT_TIMESTAMP: "2026-11-15 12:24:13.664", CONTAINER_ID: "CONT003", TEMPERATURE: 2.9, HUMIDITY: 74.34, VIBRATION: 0.25, COMMODITY: "Mangoes", QUANTITY_KG: 468.12, INGESTED_AT: "2026-11-15 05:30:15.538" },
+            { EVENT_ID: "CONT002_2026-11-15T12:24:15.666919Z", EVENT_TIMESTAMP: "2026-11-15 12:24:15.666", CONTAINER_ID: "CONT002", TEMPERATURE: 6.38, HUMIDITY: 81.98, VIBRATION: 0.34, COMMODITY: "Bananas", QUANTITY_KG: 938.83, INGESTED_AT: "2026-11-15 05:30:16.159" },
+            { EVENT_ID: "CONT001_2026-11-15T12:24:17.669566Z", EVENT_TIMESTAMP: "2026-11-15 12:24:17.669", CONTAINER_ID: "CONT001", TEMPERATURE: 6.1, HUMIDITY: 57.14, VIBRATION: 0.64, COMMODITY: "Apples", QUANTITY_KG: 392.12, INGESTED_AT: "2026-11-15 05:30:16.460" },
+            { EVENT_ID: "CONT003_2026-11-15T12:24:19.670529Z", EVENT_TIMESTAMP: "2026-11-15 12:24:19.670", CONTAINER_ID: "CONT003", TEMPERATURE: 5.17, HUMIDITY: 89.79, VIBRATION: 0.24, COMMODITY: "Bananas", QUANTITY_KG: 593.64, INGESTED_AT: "2026-11-15 05:30:16.878" },
+            // 4 Later Telemetry Records (2026-11-18)
+            { EVENT_ID: "CONT002_2026-11-18T03:49:54.266087Z", EVENT_TIMESTAMP: "2026-11-18 03:49:54.266", CONTAINER_ID: "CONT002", TEMPERATURE: 10.47, HUMIDITY: 70.72, VIBRATION: 0.63, COMMODITY: "Bananas", QUANTITY_KG: 945.77, INGESTED_AT: "2026-11-17 19:58:16.457" },
+            { EVENT_ID: "CONT003_2026-11-18T03:54:41.089977Z", EVENT_TIMESTAMP: "2026-11-18 03:54:41.089", CONTAINER_ID: "CONT003", TEMPERATURE: 12.6, HUMIDITY: 84.92, VIBRATION: 0.77, COMMODITY: "Apples", QUANTITY_KG: 194.08, INGESTED_AT: "2026-11-17 20:03:03.374" },
+            { EVENT_ID: "CONT002_2026-11-18T03:55:45.496948Z", EVENT_TIMESTAMP: "2026-11-18 03:55:45.496", CONTAINER_ID: "CONT002", TEMPERATURE: 5.53, HUMIDITY: 84.88, VIBRATION: 0.75, COMMODITY: "Mangoes", QUANTITY_KG: 544.49, INGESTED_AT: "2026-11-17 20:04:07.473" },
+            { EVENT_ID: "CONT002_2026-11-18T04:14:15.528712Z", EVENT_TIMESTAMP: "2026-11-18 04:14:15.528", CONTAINER_ID: "CONT002", TEMPERATURE: 13.63, HUMIDITY: 63.3, VIBRATION: 0.71, COMMODITY: "Bananas", QUANTITY_KG: 545.4, INGESTED_AT: "2026-11-17 20:22:37.498" }
+        ];
+
+        // Deduplicate on EVENT_ID keeping earliest INGESTED_AT (matches Snowflake QUALIFY ROW_NUMBER() = 1)
+        function buildDeduplicatedRecords(rawRecords) {
+            const sorted = [...rawRecords].sort((a, b) => a.INGESTED_AT.localeCompare(b.INGESTED_AT));
+            const seen = new Set();
+            const deduped = [];
+            for (const row of sorted) {
+                if (!seen.has(row.EVENT_ID)) {
+                    seen.add(row.EVENT_ID);
+                    deduped.push({ ...row, IS_DUPLICATE: false });
+                }
+            }
+            // Sort chronologically by EVENT_TIMESTAMP
+            return deduped.sort((a, b) => a.EVENT_TIMESTAMP.localeCompare(b.EVENT_TIMESTAMP));
+        }
+
+        // Tag raw records with duplicate flag for table inspection
+        function buildTaggedRawRecords(rawRecords) {
+            const sortedByIngest = [...rawRecords].sort((a, b) => a.INGESTED_AT.localeCompare(b.INGESTED_AT));
+            const seen = new Set();
+            const tagged = sortedByIngest.map(row => {
+                const isDup = seen.has(row.EVENT_ID);
+                seen.add(row.EVENT_ID);
+                return { ...row, IS_DUPLICATE: isDup };
+            });
+            return tagged.sort((a, b) => a.EVENT_TIMESTAMP.localeCompare(b.EVENT_TIMESTAMP) || a.INGESTED_AT.localeCompare(b.INGESTED_AT));
+        }
+
+        const DEDUP_RECORDS = buildDeduplicatedRecords(RAW_SNOWFLAKE_RECORDS);
+        const TAGGED_RAW_RECORDS = buildTaggedRawRecords(RAW_SNOWFLAKE_RECORDS);
+
+        // =========================================================================
+        // 2. APPLICATION STATE & SUPERSET COLOR PALETTE
+        // =========================================================================
+        let currentMode = 'dedup'; // 'dedup' | 'raw'
+        let currentFilteredData = [];
+
+        const CONTAINER_COLORS = {
+            CONT001: { border: '#20A7C9', bg: 'rgba(32, 167, 201, 0.14)', solid: '#20A7C9' }, // Superset Teal
+            CONT002: { border: '#F97316', bg: 'rgba(249, 115, 22, 0.14)', solid: '#F97316' }, // Warm Orange
+            CONT003: { border: '#10B981', bg: 'rgba(16, 185, 129, 0.14)', solid: '#10B981' }  // Emerald Green
+        };
+
+        const COMMODITY_COLORS = {
+            Bananas: '#FCC700', // Superset Gold
+            Mangoes: '#20A7C9', // Superset Teal
+            Apples:  '#E04355'  // Superset Crimson
+        };
+
+        let tempChartInstance = null;
+        let humidityChartInstance = null;
+        let vibrationChartInstance = null;
+        let commodityChartInstance = null;
+
+        // =========================================================================
+        // 3. FILTERING & MODE CONTROLS
+        // =========================================================================
+        function setDatasetMode(mode) {
+            currentMode = mode;
+            const btnDedup = document.getElementById('btn-mode-dedup');
+            const btnRaw = document.getElementById('btn-mode-raw');
+            const banner = document.getElementById('anomaly-banner');
+
+            if (mode === 'dedup') {
+                btnDedup.className = "px-3 py-1.5 text-xs font-semibold rounded transition-all flex items-center gap-1.5 bg-white text-superset-teal shadow-xs border border-slate-200/80";
+                btnRaw.className = "px-3 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
+                banner.className = "text-xs px-3 py-1 rounded-full bg-superset-tealLight text-superset-tealDark font-medium border border-cyan-200 flex items-center gap-1.5";
+                banner.innerHTML = `<span class="w-2 h-2 rounded-full bg-superset-teal"></span><span>Showing clean deduplicated records (10 duplicate batch-replay rows excluded)</span>`;
+            } else {
+                btnRaw.className = "px-3 py-1.5 text-xs font-semibold rounded transition-all flex items-center gap-1.5 bg-amber-500 text-white shadow-xs";
+                btnDedup.className = "px-3 py-1.5 text-xs font-medium rounded transition-all flex items-center gap-1.5 text-slate-600 hover:text-slate-900";
+                banner.className = "text-xs px-3 py-1 rounded-full bg-amber-50 text-amber-800 font-semibold border border-amber-300 flex items-center gap-1.5";
+                banner.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-500 animate-ping"></span><span>RAW TABLE MODE: Includes 10 duplicate records from 2026-11-15 (+66.6% cargo volume inflation)</span>`;
+            }
+            applyFilters();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-container').value = 'ALL';
+            document.getElementById('filter-commodity').value = 'ALL';
+            document.getElementById('table-search').value = '';
+            applyFilters();
+        }
+
+        function applyFilters() {
+            const containerVal = document.getElementById('filter-container').value;
+            const commodityVal = document.getElementById('filter-commodity').value;
+            const searchVal = document.getElementById('table-search').value.trim().toLowerCase();
+
+            const sourceData = currentMode === 'dedup' ? DEDUP_RECORDS : TAGGED_RAW_RECORDS;
+
+            currentFilteredData = sourceData.filter(row => {
+                const matchContainer = containerVal === 'ALL' || row.CONTAINER_ID === containerVal;
+                const matchCommodity = commodityVal === 'ALL' || row.COMMODITY === commodityVal;
+                const matchSearch = !searchVal ||
+                    row.EVENT_ID.toLowerCase().includes(searchVal) ||
+                    row.CONTAINER_ID.toLowerCase().includes(searchVal) ||
+                    row.COMMODITY.toLowerCase().includes(searchVal) ||
+                    row.EVENT_TIMESTAMP.toLowerCase().includes(searchVal);
+                return matchContainer && matchCommodity && matchSearch;
+            });
+
+            updateKPIs(currentFilteredData);
+            updateCharts(currentFilteredData);
+            renderDataTable(currentFilteredData);
+        }
+
+        // =========================================================================
+        // 4. KPI BIG NUMBERS CALCULATION
+        // =========================================================================
+        function updateKPIs(data) {
+            const count = data.length;
+            const uniqueContainers = new Set(data.map(d => d.CONTAINER_ID)).size;
+            const totalCargo = data.reduce((sum, d) => sum + d.QUANTITY_KG, 0);
+            const avgCargo = count ? totalCargo / count : 0;
+
+            const avgTemp = count ? data.reduce((sum, d) => sum + d.TEMPERATURE, 0) / count : 0;
+            const minTemp = count ? Math.min(...data.map(d => d.TEMPERATURE)) : 0;
+            const maxTemp = count ? Math.max(...data.map(d => d.TEMPERATURE)) : 0;
+
+            const avgHumidity = count ? data.reduce((sum, d) => sum + d.HUMIDITY, 0) / count : 0;
+            const minHumidity = count ? Math.min(...data.map(d => d.HUMIDITY)) : 0;
+            const maxHumidity = count ? Math.max(...data.map(d => d.HUMIDITY)) : 0;
+
+            const avgVib = count ? data.reduce((sum, d) => sum + d.VIBRATION, 0) / count : 0;
+            const maxVib = count ? Math.max(...data.map(d => d.VIBRATION)) : 0;
+
+            document.getElementById('kpi-events').textContent = count.toLocaleString();
+            const evBadge = document.getElementById('kpi-events-badge');
+            if (currentMode === 'dedup') {
+                evBadge.textContent = 'DEDUP';
+                evBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-cyan-50 text-superset-tealDark font-semibold';
+                document.getElementById('kpi-events-sub').textContent = 'Unique EVENT_ID count';
+            } else {
+                evBadge.textContent = 'RAW (+10 DUP)';
+                evBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold';
+                document.getElementById('kpi-events-sub').textContent = 'Unfiltered Snowflake rows';
+            }
+
+            document.getElementById('kpi-containers').textContent = uniqueContainers;
+
+            document.getElementById('kpi-cargo').innerHTML = `${totalCargo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} <span class="text-sm font-medium text-slate-500">kg</span>`;
+            document.getElementById('kpi-cargo-sub').textContent = `Avg: ${avgCargo.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} kg / event`;
+            const cargoBadge = document.getElementById('kpi-cargo-badge');
+            if (currentMode === 'dedup') {
+                cargoBadge.textContent = 'VERIFIED';
+                cargoBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-semibold';
+            } else {
+                cargoBadge.textContent = 'INFLATED';
+                cargoBadge.className = 'text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 font-semibold';
+            }
+
+            document.getElementById('kpi-temp').innerHTML = `${avgTemp.toFixed(2)}<span class="text-lg font-semibold text-slate-500">°C</span>`;
+            document.getElementById('kpi-temp-sub').textContent = count ? `Range: ${minTemp.toFixed(2)}°C – ${maxTemp.toFixed(2)}°C` : 'No records';
+
+            document.getElementById('kpi-humidity').innerHTML = `${avgHumidity.toFixed(2)}<span class="text-lg font-semibold text-slate-500">%</span>`;
+            document.getElementById('kpi-humidity-sub').textContent = count ? `Range: ${minHumidity.toFixed(2)}% – ${maxHumidity.toFixed(2)}%` : 'No records';
+
+            const vibEl = document.getElementById('kpi-vibration');
+            vibEl.innerHTML = `${maxVib.toFixed(2)}<span class="text-lg font-semibold text-slate-500">g</span>`;
+            vibEl.className = maxVib > 0.75
+                ? 'text-2xl sm:text-3xl font-bold text-rose-600 tracking-tight'
+                : 'text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight';
+            document.getElementById('kpi-vibration-sub').textContent = `Mean: ${avgVib.toFixed(2)}g across events`;
+        }
+
+        // =========================================================================
+        // 5. CHART.JS BASELINE VISUALIZATIONS
+        // =========================================================================
+        function formatShortTimestamp(ts) {
+            // "2026-11-15 12:24:01.529" -> "11-15 12:24:01"
+            return ts.slice(5, 19);
+        }
+
+        function updateCharts(data) {
+            const containers = ['CONT001', 'CONT002', 'CONT003'];
+
+            // Group sequential readings per container for multi-series line charts
+            const maxSeqLen = Math.max(
+                1,
+                ...containers.map(c => data.filter(d => d.CONTAINER_ID === c).length)
+            );
+            const seqLabels = Array.from({ length: maxSeqLen }, (_, i) => `Event #${i + 1}`);
+
+            // --- CHART 1: CONTAINER TEMPERATURE TRENDS (°C) ---
+            const tempDatasets = containers.map(cid => {
+                const cRows = data.filter(d => d.CONTAINER_ID === cid);
+                if (cRows.length === 0) return null;
+                const avg = cRows.reduce((s, r) => s + r.TEMPERATURE, 0) / cRows.length;
+                return {
+                    label: `${cid} (Avg: ${avg.toFixed(1)}°C)`,
+                    data: cRows.map(r => r.TEMPERATURE),
+                    rawRows: cRows,
+                    borderColor: CONTAINER_COLORS[cid].border,
+                    backgroundColor: CONTAINER_COLORS[cid].solid,
+                    borderWidth: 2.5,
+                    pointRadius: 4.5,
+                    pointHoverRadius: 6.5,
+                    tension: 0.25
+                };
+            }).filter(Boolean);
+
+            if (tempChartInstance) tempChartInstance.destroy();
+            tempChartInstance = new Chart(document.getElementById('chartTemperature'), {
+                type: 'line',
+                data: { labels: seqLabels, datasets: tempDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Inter', size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(ctx) {
+                                    const row = ctx.dataset.rawRows[ctx.dataIndex];
+                                    return row ? `   ${row.COMMODITY} | ${formatShortTimestamp(row.EVENT_TIMESTAMP)}` : '';
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                upperLimit: {
+                                    type: 'line',
+                                    yMin: 8.0,
+                                    yMax: 8.0,
+                                    borderColor: '#E04355',
+                                    borderWidth: 1.5,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        display: true,
+                                        content: '8.0°C Upper Threshold',
+                                        position: 'end',
+                                        backgroundColor: 'rgba(224, 67, 85, 0.9)',
+                                        color: '#fff',
+                                        font: { size: 10, family: 'Inter', weight: '600' },
+                                        padding: 4
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Temperature (°C)', font: { size: 11, weight: '600' } },
+                            suggestedMin: 0,
+                            suggestedMax: 16,
+                            grid: { color: '#F1F5F9' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Sequential Event Index per Container', font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // --- CHART 2: HUMIDITY FLUCTUATIONS (%) ---
+            const humidityDatasets = containers.map(cid => {
+                const cRows = data.filter(d => d.CONTAINER_ID === cid);
+                if (cRows.length === 0) return null;
+                const avg = cRows.reduce((s, r) => s + r.HUMIDITY, 0) / cRows.length;
+                return {
+                    label: `${cid} (Avg: ${avg.toFixed(1)}%)`,
+                    data: cRows.map(r => r.HUMIDITY),
+                    rawRows: cRows,
+                    borderColor: CONTAINER_COLORS[cid].border,
+                    backgroundColor: CONTAINER_COLORS[cid].bg,
+                    fill: true,
+                    borderWidth: 2.5,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    tension: 0.3
+                };
+            }).filter(Boolean);
+
+            if (humidityChartInstance) humidityChartInstance.destroy();
+            humidityChartInstance = new Chart(document.getElementById('chartHumidity'), {
+                type: 'line',
+                data: { labels: seqLabels, datasets: humidityDatasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8, font: { family: 'Inter', size: 11 } } },
+                        tooltip: {
+                            callbacks: {
+                                afterLabel: function(ctx) {
+                                    const row = ctx.dataset.rawRows[ctx.dataIndex];
+                                    return row ? `   ${row.COMMODITY} | ${formatShortTimestamp(row.EVENT_TIMESTAMP)}` : '';
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Relative Humidity (%)', font: { size: 11, weight: '600' } },
+                            suggestedMin: 40,
+                            suggestedMax: 95,
+                            grid: { color: '#F1F5F9' }
+                        },
+                        x: {
+                            title: { display: true, text: 'Sequential Event Index per Container', font: { size: 11 } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // --- CHART 3: VIBRATION LEVELS BY CONTAINER EVENT (g) ---
+            // Order by Container ID then Timestamp so container blocks group cleanly
+            const orderedVibRows = [...data].sort((a, b) =>
+                a.CONTAINER_ID.localeCompare(b.CONTAINER_ID) || a.EVENT_TIMESTAMP.localeCompare(b.EVENT_TIMESTAMP)
+            );
+            const containerCounters = { CONT001: 0, CONT002: 0, CONT003: 0 };
+            const vibLabels = orderedVibRows.map(r => {
+                containerCounters[r.CONTAINER_ID] = (containerCounters[r.CONTAINER_ID] || 0) + 1;
+                return `${r.CONTAINER_ID} (#${containerCounters[r.CONTAINER_ID]})`;
+            });
+            const vibValues = orderedVibRows.map(r => r.VIBRATION);
+            const vibBgColors = orderedVibRows.map(r => CONTAINER_COLORS[r.CONTAINER_ID]?.solid || '#20A7C9');
+
+            if (vibrationChartInstance) vibrationChartInstance.destroy();
+            vibrationChartInstance = new Chart(document.getElementById('chartVibration'), {
+                type: 'bar',
+                data: {
+                    labels: vibLabels,
+                    datasets: [{
+                        label: 'Vibration (g)',
+                        data: vibValues,
+                        backgroundColor: vibBgColors,
+                        borderRadius: 4,
+                        maxBarThickness: 32
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                generateLabels: () => [
+                                    { text: 'CONT001', fillStyle: CONTAINER_COLORS.CONT001.solid, strokeStyle: CONTAINER_COLORS.CONT001.solid, lineWidth: 0 },
+                                    { text: 'CONT002', fillStyle: CONTAINER_COLORS.CONT002.solid, strokeStyle: CONTAINER_COLORS.CONT002.solid, lineWidth: 0 },
+                                    { text: 'CONT003', fillStyle: CONTAINER_COLORS.CONT003.solid, strokeStyle: CONTAINER_COLORS.CONT003.solid, lineWidth: 0 }
+                                ],
+                                font: { family: 'Inter', size: 11 }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const row = orderedVibRows[ctx.dataIndex];
+                                    const flag = row.VIBRATION > 0.75 ? ' [HIGH SHOCK SPIKE]' : '';
+                                    return `Vibration: ${row.VIBRATION.toFixed(2)}g${flag}`;
+                                },
+                                afterLabel: function(ctx) {
+                                    const row = orderedVibRows[ctx.dataIndex];
+                                    return [`Commodity: ${row.COMMODITY}`, `Event ID: ${row.EVENT_ID}`];
+                                }
+                            }
+                        },
+                        annotation: {
+                            annotations: {
+                                shockLine: {
+                                    type: 'line',
+                                    yMin: 0.75,
+                                    yMax: 0.75,
+                                    borderColor: '#E04355',
+                                    borderWidth: 1.5,
+                                    borderDash: [6, 4],
+                                    label: {
+                                        display: true,
+                                        content: '0.75g High Shock Threshold',
+                                        position: 'start',
+                                        backgroundColor: 'rgba(224, 67, 85, 0.9)',
+                                        color: '#fff',
+                                        font: { size: 10, family: 'Inter', weight: '600' },
+                                        padding: 4
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Vibration (g)', font: { size: 11, weight: '600' } },
+                            beginAtZero: true,
+                            suggestedMax: 1.0,
+                            grid: { color: '#F1F5F9' }
+                        },
+                        x: {
+                            ticks: { maxRotation: 45, minRotation: 30, font: { size: 10, family: 'JetBrains Mono' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+
+            // --- CHART 4: COMMODITY-WISE TOTAL QUANTITY (kg) ---
+            const commodities = ['Bananas', 'Mangoes', 'Apples'];
+            const commStats = commodities.map(comm => {
+                const rows = data.filter(d => d.COMMODITY === comm);
+                const totalKg = rows.reduce((s, r) => s + r.QUANTITY_KG, 0);
+                const avgKg = rows.length ? totalKg / rows.length : 0;
+                return { comm, count: rows.length, totalKg: Number(totalKg.toFixed(2)), avgKg: Number(avgKg.toFixed(2)) };
+            });
+
+            if (commodityChartInstance) commodityChartInstance.destroy();
+            commodityChartInstance = new Chart(document.getElementById('chartCommodity'), {
+                type: 'bar',
+                data: {
+                    labels: commStats.map(s => s.comm),
+                    datasets: [{
+                        label: 'Total Quantity (kg)',
+                        data: commStats.map(s => s.totalKg),
+                        backgroundColor: commStats.map(s => COMMODITY_COLORS[s.comm]),
+                        borderRadius: 5,
+                        maxBarThickness: 72
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            callbacks: {
+                                label: function(ctx) {
+                                    const stat = commStats[ctx.dataIndex];
+                                    return `Total Quantity: ${stat.totalKg.toLocaleString('en-US', { minimumFractionDigits: 2 })} kg`;
+                                },
+                                afterLabel: function(ctx) {
+                                    const stat = commStats[ctx.dataIndex];
+                                    return [
+                                        `Average / Event: ${stat.avgKg.toLocaleString('en-US', { minimumFractionDigits: 2 })} kg`,
+                                        `Event Count: ${stat.count} records`
+                                    ];
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Total Cargo Quantity (kg)', font: { size: 11, weight: '600' } },
+                            beginAtZero: true,
+                            grid: { color: '#F1F5F9' }
+                        },
+                        x: {
+                            ticks: { font: { size: 12, weight: '600', family: 'Inter' } },
+                            grid: { display: false }
+                        }
+                    }
+                }
+            });
+        }
+
+        // =========================================================================
+        // 6. SNOWFLAKE DATA EXPLORER TABLE & CSV EXPORT
+        // =========================================================================
+        function renderDataTable(data) {
+            const tbody = document.getElementById('telemetry-table-body');
+            document.getElementById('table-row-badge').textContent = `${data.length} row${data.length === 1 ? '' : 's'}`;
+
+            if (data.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="10" class="px-4 py-8 text-center text-slate-500 font-sans text-xs">No telemetry records match the active filter criteria.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = data.map(row => {
+                const tempAlert = row.TEMPERATURE > 8.0;
+                const vibAlert = row.VIBRATION > 0.75;
+                const rowBg = row.IS_DUPLICATE ? 'bg-amber-50/50 hover:bg-amber-50' : 'hover:bg-slate-50';
+
+                return `
+                    <tr class="${rowBg} transition-colors">
+                        <td class="px-3 py-2 text-slate-800 font-medium whitespace-nowrap">${row.EVENT_ID}</td>
+                        <td class="px-3 py-2 text-slate-600 whitespace-nowrap">${row.EVENT_TIMESTAMP}</td>
+                        <td class="px-3 py-2 whitespace-nowrap">
+                            <span class="px-2 py-0.5 rounded font-semibold text-[10px]" style="background:${CONTAINER_COLORS[row.CONTAINER_ID].bg}; color:${CONTAINER_COLORS[row.CONTAINER_ID].border}">
+                                ${row.CONTAINER_ID}
+                            </span>
+                        </td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap ${tempAlert ? 'text-rose-600 font-bold' : 'text-slate-700'}">
+                            ${row.TEMPERATURE.toFixed(2)}°C
+                        </td>
+                        <td class="px-3 py-2 text-right text-slate-700 whitespace-nowrap">${row.HUMIDITY.toFixed(2)}%</td>
+                        <td class="px-3 py-2 text-right whitespace-nowrap ${vibAlert ? 'text-rose-600 font-bold' : 'text-slate-700'}">
+                            ${row.VIBRATION.toFixed(2)}g
+                        </td>
+                        <td class="px-3 py-2 font-sans font-medium text-slate-800 whitespace-nowrap">${row.COMMODITY}</td>
+                        <td class="px-3 py-2 text-right font-semibold text-slate-900 whitespace-nowrap">${row.QUANTITY_KG.toFixed(2)}</td>
+                        <td class="px-3 py-2 text-slate-500 whitespace-nowrap">${row.INGESTED_AT}</td>
+                        <td class="px-3 py-2 text-center whitespace-nowrap">
+                            ${row.IS_DUPLICATE
+                                ? '<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-sans font-semibold text-[10px]">DUPLICATE REPLAY</span>'
+                                : '<span class="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 font-sans font-semibold text-[10px]">PRIMARY</span>'}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function exportFilteredCsv() {
+            const headers = ['EVENT_ID', 'EVENT_TIMESTAMP', 'CONTAINER_ID', 'TEMPERATURE', 'HUMIDITY', 'VIBRATION', 'COMMODITY', 'QUANTITY_KG', 'INGESTED_AT'];
+            const csvLines = [
+                headers.join(','),
+                ...currentFilteredData.map(r => headers.map(h => r[h]).join(','))
+            ];
+            const blob = new Blob([csvLines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `atmosync_snowflake_${currentMode}_${new Date().toISOString().slice(0, 10)}.csv`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+        }
+
+        // =========================================================================
+        // 7. SQL LAB MODAL & CLIPBOARD HELPERS
+        // =========================================================================
+        function toggleSqlModal(show) {
+            const modal = document.getElementById('sql-modal');
+            if (show) {
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+            } else {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }
+        }
+
+        function copySqlCode() {
+            const sqlText = document.getElementById('sql-code-block').innerText;
+            const textarea = document.createElement('textarea');
+            textarea.value = sqlText;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+
+            const feedback = document.getElementById('copy-feedback');
+            feedback.classList.remove('opacity-0');
+            setTimeout(() => feedback.classList.add('opacity-0'), 2200);
+        }
+
+        // Initialize Dashboard on Window Load
+        window.addEventListener('DOMContentLoaded', () => {
+            applyFilters();
+        });
+    </script>
+</body>
+</html>

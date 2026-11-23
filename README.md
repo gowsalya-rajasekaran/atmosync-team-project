@@ -39,3 +39,34 @@ data_engineering/
 
 Snowflake credentials must be stored in a local `.env` file and must never be committed to GitHub.
 
+
+---
+
+## Week 2 – Snowflake and dbt Implementation
+
+### Avocado Sensor Data Pipeline
+
+An isolated avocado testing pipeline was prepared as part of the AtmoSync IoT Container Sensor Data Pipeline project.
+
+### Snowflake Implementation
+- Created a separate `CONTAINER_EVENTS_RAW_AVOCADO_TEST` table.
+- Created `CONTAINER_SENSOR_AVOCADO_TEST_VIEW` to extract structured sensor fields from JSON payloads.
+- Preserved the original raw sensor dataset.
+
+### dbt Transformation
+- Configured a separate avocado source in `sources.yml`.
+- Developed `stg_avocado_sensors.sql` for data cleaning, duplicate removal and avocado filtering.
+- Created `mart_avocado_commodity_value.sql` to combine sensor readings with commodity pricing.
+- Added an isolated avocado pricing seed with a simulated price of 120 per kg.
+- Configured data-quality tests for uniqueness, non-null values and accepted commodity values.
+
+### Validation
+- Successfully compiled and executed the avocado staging model.
+- Successfully compiled and executed the commodity-value mart.
+- Successfully executed 10 dbt data-quality tests.
+
+### Current Status
+Snowflake and dbt transformations are prepared and validated. Kafka producer integration and end-to-end data ingestion are pending.
+
+### Technologies
+Python | Apache Kafka | Snowflake | dbt Core | SQL

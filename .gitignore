@@ -1,6 +1,5 @@
 # Environment and secrets
 .env
-
 # Python
 *.pyc
 __pycache__/

@@ -1,4 +1,3 @@
-
 # AtmoSync – IoT Container Monitoring
 
 ## Snowflake Data Engineering Module

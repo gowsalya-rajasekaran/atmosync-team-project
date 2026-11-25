@@ -1,7 +1,7 @@
 WITH sensor_data AS (
 
     SELECT *
-    FROM {{ ref('stg_container_sensors') }}
+    FROM {{ ref('stg_avocado_sensors') }}
 
 ),
 
@@ -30,4 +30,4 @@ SELECT
 FROM sensor_data
 
 LEFT JOIN commodity_prices
-    ON sensor_data.COMMODITY = commodity_prices.COMMODITY
+    ON LOWER(sensor_data.COMMODITY) = LOWER(commodity_prices.COMMODITY)

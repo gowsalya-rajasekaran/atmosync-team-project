@@ -5,8 +5,9 @@ models:
   # Container Summary Mart
   - name: mart_container_summary
     description: >
-      Container-level analytical summary of sensor events,
-      including sensor readings, event counts and latest cargo quantity.
+      Container-level analytical summary of Avocado sensor events,
+      including sensor readings, event counts, latest cargo quantity,
+      commodity price per kilogram and estimated cargo value in INR.
 
     data_tests:
       - dbt_utils.unique_combination_of_columns:
@@ -25,6 +26,9 @@ models:
         description: "Type of commodity transported in the container"
         data_tests:
           - not_null
+          - accepted_values:
+              arguments:
+                values: ['Avocados']
 
       - name: TOTAL_SENSOR_EVENTS
         description: "Total number of sensor events recorded for the container and commodity"
@@ -33,6 +37,18 @@ models:
 
       - name: LATEST_REPORTED_QUANTITY_KG
         description: "Most recently reported cargo quantity in kilograms"
+        data_tests:
+          - not_null
+
+      - name: PRICE_PER_KG
+        description: "Commodity price per kilogram in Indian Rupees"
+        data_tests:
+          - not_null
+
+      - name: ESTIMATED_CARGO_VALUE_INR
+        description: >
+          Estimated container cargo value calculated using
+          the latest reported quantity multiplied by price per kilogram.
         data_tests:
           - not_null
 
@@ -50,7 +66,6 @@ models:
         description: "Average recorded container vibration"
         data_tests:
           - not_null
-
   # Sensor Commodity Value Mart
   - name: mart_sensor_commodity_value
     description: >

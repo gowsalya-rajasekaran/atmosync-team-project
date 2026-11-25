@@ -31,5 +31,4 @@ models:
 
 seeds:
   atmosync_dbt:
-    commodity_prices_avocado_test:
-      +schema: avocado_test
+    +schema: analytics

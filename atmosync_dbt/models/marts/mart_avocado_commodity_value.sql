@@ -7,7 +7,7 @@ avocado_prices AS (
     SELECT
         INITCAP(TRIM(COMMODITY)) AS COMMODITY,
         PRICE_PER_KG
-    FROM {{ ref('commodity_prices_avocado_test') }}
+    FROM {{ ref('commodity_prices') }}
 )
 
 SELECT

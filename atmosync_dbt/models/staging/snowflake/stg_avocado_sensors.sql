@@ -1,6 +1,7 @@
+
 WITH source_data AS (
     SELECT *
-    FROM {{ source('atmosync_avocado_test', 'container_sensor_avocado_test_view') }}
+    FROM {{ source('atmosync_raw', 'container_sensor_view') }}
 ),
 
 cleaned_data AS (

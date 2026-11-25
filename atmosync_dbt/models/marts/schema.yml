@@ -110,3 +110,40 @@ models:
           commodity quantity by price per kilogram.
         data_tests:
           - not_null
+  - name: mart_avocado_commodity_value
+    description: >
+      Event-level avocado sensor data enriched with commodity
+      pricing to calculate total cargo value.
+
+    columns:
+      - name: EVENT_ID
+        data_tests:
+          - not_null
+          - unique
+
+      - name: EVENT_TIMESTAMP
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: COMMODITY
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Avocados']
+
+      - name: QUANTITY_KG
+        data_tests:
+          - not_null
+
+      - name: PRICE_PER_KG
+        data_tests:
+          - not_null
+
+      - name: TOTAL_COMMODITY_VALUE
+        data_tests:
+          - not_null

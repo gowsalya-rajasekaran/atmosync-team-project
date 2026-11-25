@@ -1,16 +1,29 @@
 # AtmoSync – IoT Container Monitoring
-## Snowflake Data Engineering Module
-This module stores and processes IoT container sensor data using Snowflake.
-### Architecture
-Python Sensor Simulator → Kafka Producer → Kafka Topic → Python Kafka Consumer → Snowflake
-### Snowflake Configuration
-- Database: ATMOSYNC_DB
-- Schema: RAW_DATA
-- Warehouse: COMPUTE_WH
-- Raw Table: CONTAINER_EVENTS_RAW
-- Analytics View: CONTAINER_SENSOR_VIEW
 
-### Folder Structure
+## Snowflake Data Engineering Module
+
+AtmoSync is an IoT container monitoring data pipeline that collects container sensor events, streams them through Apache Kafka, stores them in Snowflake, and transforms them into analytical datasets using dbt.
+
+## Architecture
+
+Python Sensor Simulator → Kafka Producer → Kafka Topic → Python Kafka Consumer → Snowflake → dbt Transformations → Analytics Marts
+
+## Snowflake Configuration
+
+- **Database:** `ATMOSYNC_DB`
+- **Schema:** `RAW_DATA`
+- **Warehouse:** `COMPUTE_WH`
+- **Raw Table:** `CONTAINER_EVENTS_RAW`
+- **Analytics View:** `CONTAINER_SENSOR_VIEW`
+
+### Additional Avocado Testing Objects
+
+- `CONTAINER_EVENTS_RAW_AVOCADO_TEST`
+- `CONTAINER_SENSOR_AVOCADO_TEST_VIEW`
+
+These objects were created for isolated Avocado testing. The separate test table was empty during the latest validation.
+
+## Folder Structure
 
 ```text
 data_engineering/
@@ -21,52 +34,66 @@ data_engineering/
         ├── 01_create_raw_table.sql
         └── 02_create_sensor_view.sql
 ```
-### Data Flow
+
+The dbt project is maintained separately in the `atmosync_dbt/` directory.
+
+## Data Flow
+
 1. Python simulator generates container sensor events.
-2. Kafka producer publishes events to `atmosync-sensor-data`.
-3. Python consumer reads JSON messages.
+2. Kafka producer publishes events to the `atmosync-sensor-data` topic.
+3. Python Kafka consumer reads JSON messages.
 4. Snowflake stores raw JSON payloads in `CONTAINER_EVENTS_RAW`.
-5. `CONTAINER_SENSOR_VIEW` extracts structured sensor columns for analytics.
-### Setup Requirements
-- Python 3
-- Apache Kafka
-- Snowflake account
-- Required Python packages:
-  - kafka-python
-  - snowflake-connector-python
-  - python-dotenv
-### Security
-
-Snowflake credentials must be stored in a local `.env` file and must never be committed to GitHub.
-
-
----
+5. `CONTAINER_SENSOR_VIEW` extracts structured sensor columns.
+6. dbt staging models clean, standardize and deduplicate sensor data.
+7. dbt mart models prepare analytical datasets for reporting.
 
 ## Week 2 – Snowflake and dbt Implementation
 
-### Avocado Sensor Data Pipeline
+### Staging Models
 
-An isolated avocado testing pipeline was prepared as part of the AtmoSync IoT Container Sensor Data Pipeline project.
+- `stg_container_sensors` – cleans and standardizes general container sensor data.
+- `stg_avocado_sensors` – filters Avocado events, standardizes fields and removes duplicate events.
 
-### Snowflake Implementation
-- Created a separate `CONTAINER_EVENTS_RAW_AVOCADO_TEST` table.
-- Created `CONTAINER_SENSOR_AVOCADO_TEST_VIEW` to extract structured sensor fields from JSON payloads.
-- Preserved the original raw sensor dataset.
+The Avocado staging model currently reads from the general `CONTAINER_SENSOR_VIEW` and filters for Avocado records.
 
-### dbt Transformation
-- Configured a separate avocado source in `sources.yml`.
-- Developed `stg_avocado_sensors.sql` for data cleaning, duplicate removal and avocado filtering.
-- Created `mart_avocado_commodity_value.sql` to combine sensor readings with commodity pricing.
-- Added an isolated avocado pricing seed with a simulated price of 120 per kg.
-- Configured data-quality tests for uniqueness, non-null values and accepted commodity values.
+### Mart Models
 
-### Validation
-- Successfully compiled and executed the avocado staging model.
-- Successfully compiled and executed the commodity-value mart.
-- Successfully executed 10 dbt data-quality tests.
+Four analytical mart models are implemented:
 
-### Current Status
-Snowflake and dbt transformations are prepared and validated. Kafka producer integration and end-to-end data ingestion are pending.
+1. `mart_container_summary` – container-level summary, sensor averages and estimated cargo value.
+2. `mart_avocado_commodity_value` – event-level Avocado commodity valuation.
+3. `mart_sensor_commodity_value` – sensor event data enriched with commodity pricing.
+4. `mart_sensor_monitoring` – aggregated sensor monitoring metrics.
 
-### Technologies
+### Commodity Pricing
+
+- Seed file: `seeds/commodity_prices.csv`
+- Commodity: Avocados
+- Simulated price: ₹120 per kg
+
+### Data Quality and Validation
+
+dbt schema tests cover:
+- Unique event identifiers.
+- Non-null required fields.
+- Accepted commodity values.
+- Unique container and commodity combinations in summary models.
+
+**Latest validation results:**
+
+| Validation | Result |
+|---|---:|
+| Mart tests | 39 passed |
+| Staging tests | 19 passed |
+| Total dbt tests | 58 passed |
+| Test errors | 0 |
+
+The four mart models were also successfully rebuilt using dbt.
+
+## Technologies
+
 Python | Apache Kafka | Snowflake | dbt Core | SQL
+
+## Security
+
+Snowflake credentials must be stored in a local `.env` file and must never be committed to GitHub.

@@ -40,6 +40,7 @@ cursor = conn.cursor()
 
 print("Connected to Kafka and Snowflake!")
 
+
 try:
     for message in consumer:
         data = message.value
@@ -52,8 +53,12 @@ try:
             ) AS source
             ON target.EVENT_ID = source.EVENT_ID
             WHEN NOT MATCHED THEN
-                INSERT (EVENT_ID, RAW_PAYLOAD)
-                VALUES (source.EVENT_ID, source.RAW_PAYLOAD)
+                INSERT (EVENT_ID, RAW_PAYLOAD, INGESTED_AT)
+                VALUES (
+                    source.EVENT_ID,
+                    source.RAW_PAYLOAD,
+                    CURRENT_TIMESTAMP()
+                )
             """,
             (
                 data["event_id"],
@@ -63,6 +68,7 @@ try:
 
         consumer.commit()
         print(f"Successfully stored and committed: {data['event_id']}")
+
 
 except KeyboardInterrupt:
     print("Consumer stopped.")

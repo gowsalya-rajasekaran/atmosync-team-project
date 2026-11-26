@@ -1,0 +1,52 @@
+[
+  {
+    "event_id": "bcf7ebec-316e-4c21-bbf7-430c03eff0ff",
+    "timestamp": "2026-11-22T12:14:33.109245+00:00",
+    "container_id": "CONT003",
+    "temperature": 6.88,
+    "humidity": 93.97,
+    "vibration": 0.68,
+    "commodity": "Avocados",
+    "quantity_kg": 400
+  },
+  {
+    "event_id": "d3967101-c8b5-4e97-adbd-cc05b8e24a6c",
+    "timestamp": "2026-11-22T12:14:35.109906+00:00",
+    "container_id": "CONT001",
+    "temperature": 6.12,
+    "humidity": 94.01,
+    "vibration": 0.74,
+    "commodity": "Avocados",
+    "quantity_kg": 500
+  },
+  {
+    "event_id": "bc220d0c-7d2d-4b66-97a1-eaea488e8137",
+    "timestamp": "2026-11-22T12:14:49.118667+00:00",
+    "container_id": "CONT001",
+    "temperature": 8.84,
+    "humidity": 92.42,
+    "vibration": 0.11,
+    "commodity": "Avocados",
+    "quantity_kg": 500
+  },
+  {
+    "event_id": "add05f35-77f5-46f9-9276-84e8ecd4ff48",
+    "timestamp": "2026-11-22T12:15:01.125437+00:00",
+    "container_id": "CONT002",
+    "temperature": 6.32,
+    "humidity": 99.97,
+    "vibration": 0.71,
+    "commodity": "Avocados",
+    "quantity_kg": 700
+  },
+  {
+    "event_id": "685ac077-0ce9-4446-97d0-b168080784ee",
+    "timestamp": "2026-11-22T12:15:07.129444+00:00",
+    "container_id": "CONT003",
+    "temperature": 6.12,
+    "humidity": 99.65,
+    "vibration": 0.72,
+    "commodity": "Avocados",
+    "quantity_kg": 400
+  }
+]

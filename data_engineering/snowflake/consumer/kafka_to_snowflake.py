@@ -6,7 +6,7 @@ import snowflake.connector
 from dotenv import load_dotenv
 
 # Load private credentials from .env
-load_dotenv()
+load_dotenv(os.path.expanduser("~/atmosync/.env"))
 
 SNOWFLAKE_USER = os.getenv("SNOWFLAKE_USER")
 SNOWFLAKE_PASSWORD = os.getenv("SNOWFLAKE_PASSWORD")
@@ -19,8 +19,9 @@ if not all([SNOWFLAKE_USER, SNOWFLAKE_PASSWORD, SNOWFLAKE_ACCOUNT]):
 consumer = KafkaConsumer(
     "atmosync-sensor-data",
     bootstrap_servers="localhost:9092",
-    auto_offset_reset="earliest",
-    enable_auto_commit=True,
+    group_id="atmosync-snowflake-consumer",
+    auto_offset_reset="latest",
+    enable_auto_commit=False,
     value_deserializer=lambda x: json.loads(x.decode("utf-8"))
 )
 
@@ -39,6 +40,7 @@ cursor = conn.cursor()
 
 print("Connected to Kafka and Snowflake!")
 
+
 try:
     for message in consumer:
         data = message.value
@@ -51,14 +53,22 @@ try:
             ) AS source
             ON target.EVENT_ID = source.EVENT_ID
             WHEN NOT MATCHED THEN
-                INSERT (EVENT_ID, RAW_PAYLOAD)
-                VALUES (source.EVENT_ID, source.RAW_PAYLOAD)
+                INSERT (EVENT_ID, RAW_PAYLOAD, INGESTED_AT)
+                VALUES (
+                    source.EVENT_ID,
+                    source.RAW_PAYLOAD,
+                    CURRENT_TIMESTAMP()
+                )
             """,
             (
-                data["container_id"] + "_" + data["timestamp"],
+                data["event_id"],
                 json.dumps(data)
             )
         )
+
+        consumer.commit()
+        print(f"Successfully stored and committed: {data['event_id']}")
+
 
 except KeyboardInterrupt:
     print("Consumer stopped.")

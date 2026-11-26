@@ -7,4 +7,3 @@ sources:
     tables:
       - name: container_sensor_view
         description: "Structured container sensor events from Snowflake"
-

@@ -1,8 +1,14 @@
+
 version: 2
 
 models:
+  # Container Summary Mart
   - name: mart_container_summary
-    description: "Container-level analytical summary of sensor events"
+    description: >
+      Container-level analytical summary of Avocado sensor events,
+      including sensor readings, event counts, latest cargo quantity,
+      commodity price per kilogram and estimated cargo value in INR.
+
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -12,29 +18,132 @@ models:
 
     columns:
       - name: CONTAINER_ID
+        description: "Unique identifier of the shipping container"
+        data_tests:
+          - not_null
+
+      - name: COMMODITY
+        description: "Type of commodity transported in the container"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['Avocados']
+
+      - name: TOTAL_SENSOR_EVENTS
+        description: "Total number of sensor events recorded for the container and commodity"
+        data_tests:
+          - not_null
+
+      - name: LATEST_REPORTED_QUANTITY_KG
+        description: "Most recently reported cargo quantity in kilograms"
+        data_tests:
+          - not_null
+
+      - name: PRICE_PER_KG
+        description: "Commodity price per kilogram in Indian Rupees"
+        data_tests:
+          - not_null
+
+      - name: ESTIMATED_CARGO_VALUE_INR
+        description: >
+          Estimated container cargo value calculated using
+          the latest reported quantity multiplied by price per kilogram.
+        data_tests:
+          - not_null
+
+      - name: AVG_TEMPERATURE
+        description: "Average recorded container temperature"
+        data_tests:
+          - not_null
+
+      - name: AVG_HUMIDITY
+        description: "Average recorded container humidity"
+        data_tests:
+          - not_null
+
+      - name: AVG_VIBRATION
+        description: "Average recorded container vibration"
+        data_tests:
+          - not_null
+  # Sensor Commodity Value Mart
+  - name: mart_sensor_commodity_value
+    description: >
+      Sensor event data enriched with mock commodity prices
+      to calculate estimated cargo value in Indian Rupees.
+
+    columns:
+      - name: EVENT_ID
+        description: "Unique identifier for each sensor event"
+        data_tests:
+          - not_null
+          - unique
+
+      - name: EVENT_TIMESTAMP
+        description: "Date and time when the sensor event occurred"
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        description: "Identifier of the shipping container"
+        data_tests:
+          - not_null
+
+      - name: COMMODITY
+        description: "Type of commodity transported"
+        data_tests:
+          - not_null
+
+      - name: QUANTITY_KG
+        description: "Quantity of commodity in kilograms"
+        data_tests:
+          - not_null
+
+      - name: PRICE_PER_KG
+        description: "Mock commodity price per kilogram in INR"
+        data_tests:
+          - not_null
+
+      - name: ESTIMATED_CARGO_VALUE_INR
+        description: >
+          Estimated cargo value calculated by multiplying
+          commodity quantity by price per kilogram.
+        data_tests:
+          - not_null
+  - name: mart_avocado_commodity_value
+    description: >
+      Event-level avocado sensor data enriched with commodity
+      pricing to calculate total cargo value.
+
+    columns:
+      - name: EVENT_ID
+        data_tests:
+          - not_null
+          - unique
+
+      - name: EVENT_TIMESTAMP
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
         data_tests:
           - not_null
 
       - name: COMMODITY
         data_tests:
           - not_null
+          - accepted_values:
+              arguments:
+                values: ['Avocados']
 
-      - name: TOTAL_SENSOR_EVENTS
+      - name: QUANTITY_KG
         data_tests:
           - not_null
 
-      - name: LATEST_REPORTED_QUANTITY_KG
+      - name: PRICE_PER_KG
         data_tests:
           - not_null
 
-      - name: AVG_TEMPERATURE
-        data_tests:
-          - not_null
-
-      - name: AVG_HUMIDITY
-        data_tests:
-          - not_null
-
-      - name: AVG_VIBRATION
+      - name: TOTAL_COMMODITY_VALUE
         data_tests:
           - not_null

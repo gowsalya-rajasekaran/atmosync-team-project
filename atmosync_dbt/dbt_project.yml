@@ -27,3 +27,8 @@ models:
     marts:
       +materialized: table
       +schema: analytics
+
+
+seeds:
+  atmosync_dbt:
+    +schema: analytics

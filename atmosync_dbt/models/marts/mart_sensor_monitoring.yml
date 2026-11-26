@@ -1,8 +1,12 @@
+
 version: 2
 
 models:
   - name: mart_sensor_monitoring
-    description: "Container sensor monitoring metrics"
+    description: >
+      Container-level sensor monitoring mart containing aggregated
+      temperature, humidity and vibration metrics for each commodity.
+
     data_tests:
       - dbt_utils.unique_combination_of_columns:
           arguments:
@@ -12,41 +16,57 @@ models:
 
     columns:
       - name: CONTAINER_ID
+        description: "Unique identifier of the shipping container"
         data_tests:
           - not_null
 
       - name: COMMODITY
+        description: "Type of commodity transported in the container"
         data_tests:
           - not_null
 
       - name: TOTAL_SENSOR_EVENTS
+        description: "Total number of sensor events recorded for the container and commodity"
         data_tests:
           - not_null
 
       - name: MIN_TEMPERATURE
+        description: "Minimum temperature recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: AVG_TEMPERATURE
+        description: "Average temperature recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: MAX_TEMPERATURE
+        description: "Maximum temperature recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: MIN_HUMIDITY
+        description: "Minimum humidity recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: AVG_HUMIDITY
+        description: "Average humidity recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: MAX_HUMIDITY
+        description: "Maximum humidity recorded by the container sensors"
         data_tests:
           - not_null
 
       - name: MAX_VIBRATION
+        description: "Maximum vibration recorded by the container sensors"
         data_tests:
           - not_null
+
+      - name: FIRST_EVENT_TIMESTAMP
+        description: "Timestamp of the earliest recorded sensor event"
+
+      - name: LATEST_EVENT_TIMESTAMP
+        description: "Timestamp of the most recently recorded sensor event"

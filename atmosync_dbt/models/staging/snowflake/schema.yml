@@ -94,3 +94,53 @@ models:
       - name: VIBRATION
         data_tests:
           - not_null
+  - name: stg_container_gps
+    description: >
+      Cleaned and standardized GPS tracking data extracted
+      from the Snowflake raw GPS table. Duplicate events
+      are removed and GPS fields are validated.
+
+    columns:
+      - name: EVENT_ID
+        description: "Unique identifier for each GPS event"
+        data_tests:
+          - not_null
+          - unique
+
+      - name: ROUTE_ID
+        description: "Identifier of the container route"
+        data_tests:
+          - not_null
+
+      - name: LEG_ID
+        description: "Identifier of the transport leg"
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        description: "Identifier of the tracked container"
+        data_tests:
+          - not_null
+
+      - name: TRANSPORT_MODE
+        description: "Transport mode such as SEA or ROAD"
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SEA', 'ROAD']
+
+      - name: LATITUDE
+        description: "GPS latitude coordinate"
+        data_tests:
+          - not_null
+
+      - name: LONGITUDE
+        description: "GPS longitude coordinate"
+        data_tests:
+          - not_null
+
+      - name: LOCATION_TIMESTAMP
+        description: "Timestamp when the GPS location was recorded"
+        data_tests:
+          - not_null

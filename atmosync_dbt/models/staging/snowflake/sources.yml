@@ -7,3 +7,6 @@ sources:
     tables:
       - name: container_sensor_view
         description: "Structured container sensor events from Snowflake"
+
+      - name: container_gps_raw
+        description: "Raw GPS tracking events ingested from Kafka"

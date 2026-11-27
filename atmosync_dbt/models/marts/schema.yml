@@ -147,3 +147,130 @@ models:
       - name: TOTAL_COMMODITY_VALUE
         data_tests:
           - not_null
+
+  # GPS Route Summary Mart
+  - name: mart_container_route_summary
+    description: >
+      Route-level summary of container GPS tracking events,
+      transport legs, and latest recorded coordinates.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ROUTE_ID
+              - CONTAINER_ID
+
+    columns:
+      - name: ROUTE_ID
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: TOTAL_GPS_EVENTS
+        data_tests:
+          - not_null
+
+      - name: TOTAL_TRANSPORT_LEGS
+        data_tests:
+          - not_null
+
+      - name: SEA_EVENTS
+        data_tests:
+          - not_null
+
+      - name: ROAD_EVENTS
+        data_tests:
+          - not_null
+
+      - name: LATEST_RECORDED_TIMESTAMP
+        data_tests:
+          - not_null
+
+  # GPS Latest Location Mart
+  - name: mart_container_latest_location
+    description: >
+      Latest recorded GPS event for each container and route.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ROUTE_ID
+              - CONTAINER_ID
+
+    columns:
+      - name: EVENT_ID
+        data_tests:
+          - not_null
+          - unique
+
+      - name: ROUTE_ID
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: LATITUDE
+        data_tests:
+          - not_null
+
+      - name: LONGITUDE
+        data_tests:
+          - not_null
+
+      - name: LOCATION_TIMESTAMP
+        data_tests:
+          - not_null
+
+  # GPS Transport Leg Summary Mart
+  - name: mart_transport_leg_summary
+    description: >
+      Transport-leg-level GPS summary comparing SEA and ROAD
+      movements for each container route.
+
+    data_tests:
+      - dbt_utils.unique_combination_of_columns:
+          arguments:
+            combination_of_columns:
+              - ROUTE_ID
+              - CONTAINER_ID
+              - LEG_ID
+              - TRANSPORT_MODE
+
+    columns:
+      - name: ROUTE_ID
+        data_tests:
+          - not_null
+
+      - name: CONTAINER_ID
+        data_tests:
+          - not_null
+
+      - name: LEG_ID
+        data_tests:
+          - not_null
+
+      - name: TRANSPORT_MODE
+        data_tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['SEA', 'ROAD']
+
+      - name: TOTAL_GPS_EVENTS
+        data_tests:
+          - not_null
+
+      - name: LEG_START_TIMESTAMP
+        data_tests:
+          - not_null
+
+      - name: LEG_END_TIMESTAMP
+        data_tests:
+          - not_null

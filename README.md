@@ -1,6 +1,6 @@
 
 # AtmoSync – IoT Container Monitoring
-
+AtmoSync - Micro-Climate Arbitrage
 ## Snowflake Data Engineering Module
 
 This module stores and processes IoT container sensor data using Snowflake.
@@ -28,7 +28,6 @@ data_engineering/
         ├── 01_create_raw_table.sql
         └── 02_create_sensor_view.sql
 ```
-
 ### Data Flow
 
 1. Python simulator generates container sensor events.
@@ -49,5 +48,4 @@ data_engineering/
 
 ### Security
 
-Snowflake credentials must be stored in a local `.env` file and must never be committed to GitHub.
-
+Snowflake credentials must be stored in a local `.env` file and must never be committed to GitHub
